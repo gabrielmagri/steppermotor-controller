@@ -10,19 +10,23 @@
 #include "FreeRTOS/inc/task.h"
 #include "FreeRTOS/inc/queue.h"
 #include "FreeRTOS/inc/timers.h"
+#include "FreeRTOS/FreeRTOSConfig.h"
 
 /* drv includes */
 #include "drv/LED/LED.h"
+#include "drv/KEY/Keyboard.h"
 
 xTaskHandle xHandle_LEDTask 	  = NULL;
+xTaskHandle xHandle_KeyboardTask  = NULL;
 
 static void vLEDTask(void *pvParameters);
+static void vKeyboardTask(void *pvParameters);
 
 int main(void)
 {
 	/* Drivers Initializations */
 	LED_Init();
-
+	Keyboard_Init();
 
     xTaskCreate(vLEDTask,
     			"LEDTask",
@@ -30,6 +34,13 @@ int main(void)
 				(void *) NULL,
 				tskIDLE_PRIORITY,
 				xHandle_LEDTask);
+
+    xTaskCreate(vKeyboardTask,
+				"KeyboardTask",
+				configMINIMAL_STACK_SIZE,
+				(void *) NULL,
+				tskIDLE_PRIORITY,
+				xHandle_KeyboardTask);
 
     vTaskStartScheduler();
 
@@ -39,13 +50,31 @@ int main(void)
 static void vLEDTask (void *pvParameters)
 {
 	TickType_t xLastWakeTime;
-	const TickType_t xFrequency = 1000; // 100ms
+	const TickType_t xFrequency = 10; // 10ms
 	xLastWakeTime = xTaskGetTickCount();
 
 	for(;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		LED_Toogle(0);
+		//LED_Toogle(0);
+	}
+
+	vTaskDelete(NULL);
+}
+
+
+
+static void vKeyboardTask (void *pvParameters)
+{
+	TickType_t xLastWakeTime;
+	const TickType_t xFrequency = 10; // 10ms
+	xLastWakeTime = xTaskGetTickCount();
+
+	for(;;)
+	{
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		unsigned long in = Keyboard_Continuous_In();
+		if(in!=0) LED_Toogle(0);
 	}
 
 	vTaskDelete(NULL);
