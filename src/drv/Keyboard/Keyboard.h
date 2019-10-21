@@ -9,7 +9,6 @@ static const unsigned long DEBOUNCE_BOUND = (unsigned long)2000000;
 #define KEY_THREE 0X04
 #define KEY_FOUR  0X08
 #define KEY_FIVE  0X16
-#define ENABLED_KEYS_MASK 0x1F
 
 // A struct that represents a volicity instance when using continuos keyboard input
 struct velocity {

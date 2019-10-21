@@ -1,5 +1,8 @@
-#include "Keyboard.h"
+#include "../Keyboard/Keyboard.h"
+
 #include "stm32f0xx_conf.h"
+
+#define GET_KEYBOARD_INPUTS (uint8_t)((GPIO_ReadInputData(GPIOC) & (GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12)) >> 8)
 
 st_velocity velocity4 = { 0,   0,  0 };
 st_velocity velocity3 = { 1,   15, 0, &velocity4 };
@@ -13,21 +16,25 @@ st_velocity _currentVelocity;
 // Input: none
 // Output: none
 void Keyboard_Init(void) {
-	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure_PortC;
 
-	/* GPIOC Periph clock enable */
+	/* GPIOC Peripheral clock enable */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 
-	/* Configure PC4 as input */
-	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+	/* Configure PC8, PC9, PC10, PC11, PC12 as the inputs from Keyboard */
+	GPIO_InitStructure_PortC.GPIO_Mode  = GPIO_Mode_IN;
+	GPIO_InitStructure_PortC.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure_PortC.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure_PortC.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure_PortC.GPIO_Pin   = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12;
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
-	GPIO_ResetBits(GPIOC, GPIO_Pin_4);
+	/* Apply the configuration for GPIO Ports */
+	GPIO_Init(GPIOC, &GPIO_InitStructure_PortC);
+
+	/* Reset Port bits related with the Keyboard used pins */
+	GPIO_ResetBits(GPIOC, GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12);
 	
+	/* Set the start velocity forKeyboard_Continuous_In() as velocity0 */
 	_currentVelocity = velocity0;
 	
 }
@@ -39,7 +46,7 @@ void Keyboard_Init(void) {
 // Output: 0 to 1F depending on keys combination
 unsigned long Keyboard_InNoDebounce(void) {
     // Read and return the current keys input status
-	return !GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_4);
+	return GET_KEYBOARD_INPUTS;
 }
 
 // **************Keyboard_In*********************
@@ -55,7 +62,7 @@ unsigned long Keyboard_In(void) {
 	unsigned long _currentStatus                     = 0;
 	
 	// Read the current keys input status
-	_currentStatus = !GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_4);
+	_currentStatus = GET_KEYBOARD_INPUTS;
 	
 	// if there is some key pressed and the value still the same increment the debounce counter.
 	// This statement make it only possible to activate alternating the keys.
@@ -68,7 +75,7 @@ unsigned long Keyboard_In(void) {
 		_outputed = 0;
 	}
 	
-	// After compering current with the last value we make the last to remember the current
+	// After comparing current with the last value we make the last to remember the current
 	_lastCurrentPressingStatus = _currentStatus;
 	
 	// Check for the debounce value, if reached return the key pressed
@@ -101,7 +108,7 @@ unsigned long Keyboard_Continuous_In(void) {
 	static char _outputed                           = 0;
 	
 	// Read the current keys input status
-	_currentStatus = !GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_4);
+	_currentStatus = GET_KEYBOARD_INPUTS;
 	
 	// if there is some key pressed and the value still the same increment the debounce counter.
 	if( (_currentStatus != 0) && (_currentStatus == _lastCurrentPressingStatus) ) {
@@ -143,4 +150,9 @@ unsigned long Keyboard_Continuous_In(void) {
 	
 	return 0x00; //default return value when there is no press event
 	
+}
+
+uint8_t getKeyboardInput()
+{
+	return (uint8_t)((GPIO_ReadInputData(GPIOC) & (GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10 | GPIO_Pin_11 | GPIO_Pin_12)) >> 8);
 }

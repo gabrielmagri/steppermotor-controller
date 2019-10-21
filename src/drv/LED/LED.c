@@ -22,7 +22,7 @@ void LED_Init(void)
 
 void LED_Toogle(uint8_t Led)
 {
-	static uint8_t status = 1;
+	static uint8_t status = 0;
 	status ^= 0x01;
 
 	GPIO_WriteBit(GPIOA,GPIO_Pin_5, status);
