@@ -16,11 +16,12 @@
 #include "drv/LED/LED.h"
 #include "drv/Keyboard/Keyboard.h"
 #include "drv/LCD/Nokia5110.h"
+#include "ControllerManager/ControllerManager.h"
 
-xTaskHandle xHandle_LEDTask 	  = NULL;
+xTaskHandle xHandle_OutputTask 	  = NULL;
 xTaskHandle xHandle_KeyboardTask  = NULL;
 
-static void vLEDTask(void *pvParameters);
+static void vOutputTask(void *pvParameters);
 static void vKeyboardTask(void *pvParameters);
 
 /* A Unisinos 84x48 single color bitmap image to be displayed on startup */
@@ -102,14 +103,14 @@ int main(void)
 	/* Drivers Initializations */
 	LED_Init();
 	Keyboard_Init();
-	Nokia5110_Init();
+	ControllerManager_Init();
 
-    xTaskCreate(vLEDTask,
-    			"LEDTask",
+    xTaskCreate(vOutputTask,
+    			"OutputTask",
 				configMINIMAL_STACK_SIZE,
 				(void *) NULL,
 				tskIDLE_PRIORITY,
-				xHandle_LEDTask);
+				xHandle_OutputTask);
 
     xTaskCreate(vKeyboardTask,
 				"KeyboardTask",
@@ -123,16 +124,16 @@ int main(void)
     return 0;
 }
 
-static void vLEDTask (void *pvParameters)
+static void vOutputTask (void *pvParameters)
 {
 	TickType_t xLastWakeTime;
-	const TickType_t xFrequency = 10; // 10ms
 	xLastWakeTime = xTaskGetTickCount();
 
 	for(;;)
 	{
+		const TickType_t xFrequency = ControllerManager_GetTaskDelay();
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		//LED_Toogle(0);
+		ControllerManager_UpdateOutputs();
 	}
 
 	vTaskDelete(NULL);
@@ -146,28 +147,15 @@ static void vKeyboardTask (void *pvParameters)
 	TickType_t xLastWakeTime;
 	const TickType_t xFrequency = 10; // 10ms
 	xLastWakeTime = xTaskGetTickCount();
-	Nokia5110_Clear();
 	for(;;)
 	{
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		unsigned long in = Keyboard_In();
-		if(in!=0 && on==0) {
-			LED_Toogle(0);
-			Nokia5110_OutChar('>');
-//			Nokia5110_OutString("Hello World!");
-//			Nokia5110_OutUDec(239);
-//			double myDouble = 98.795;
-//			Nokia5110_OutDouble(myDouble);
-//			Nokia5110_PrintBMP(0, 47, _logoUni, 0);
-//			Nokia5110_DisplayBuffer();
-			on=1;
-		}
-		else if(in==0 && on==1)
+		unsigned long in = Keyboard_Continuous_In();
+		if(in!=0)
 		{
-			on=0;
+			ControllerManager_ProccessInputs(in);
 		}
 	}
-
 	vTaskDelete(NULL);
 }
 

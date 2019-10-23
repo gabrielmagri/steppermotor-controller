@@ -22,6 +22,7 @@
 void Nokia5110_Init(void);
 void Nokia5110_OutChar(unsigned char data);
 void Nokia5110_OutString(char *ptr);
+void Nokia5110_OutUDec3pad(unsigned short n);
 void Nokia5110_OutUDec(unsigned short n);
 void Nokia5110_OutDouble(double d);
 void Nokia5110_Clear(void);
